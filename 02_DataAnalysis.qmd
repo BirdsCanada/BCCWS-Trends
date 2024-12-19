@@ -1,67 +1,71 @@
 ---
-title: "03_DataAnalysis"
+title: "02_DataAnalysis"
 format: html
 editor: visual
 editor_options: 
   chunk_output_type: console
 ---
 
-# Data Analysis - Species Trends
-
-## 3 International and National Assessments
-
-A first assessment of coastal waterbird trends will be done for the full extent of the Salish Sea, and for each country separately. This is done on a species-by-species basis and is done without using a spatially explicit model to start. 
+# Data Analysis 
 
 Run setup if starting a new environment.
+
 ```{r}
 
-source("00_Setup.R")
+source("01_Setup.R")
+
+#Read in the clean datasets
+in.BCCWS<-read.csv("Data/in.BCCWS.csv")
+event.BCCWS<-read.csv("Data/event.BCCWS.csv")
 
 #Manually Specify the start and end year of the analysis
-Y1 = 2008
-Y2 = 2022
+Y1 = 1999
+Y2 = 2023
 
 ```
 
 
-### 3.1 International or National Assessment 
+## 2 Methods
 
-The first step is to run the analysis for the full extent of the Salish Sea, or for each country separately. Species are only included in an analysis if they meet the minimum data requirements, which are detailed below.  
+Our analysis will use spatially varying coefficient models (SVCs, Gelfand et al. 2003) to account for relationships between variables that are not uniform across large spatial areas. This modelling approach was first applied to continent wide bird abundance data to assess winter bird population trends using discrete aerial units (Meehan et al. 2019) and an intrinsic conditional autoregressive model (iCAR; Besag 1974). The modelling framework was later adapted (Meehan et al. 2024) to incorporate continuous space using a triangulated model mesh and stochastic partial differential equation (SPDE; Lindgren et al. 2022). The SPDE models benefits include (1) finer resolution of trends, (2) a better understanding of the range of spatial correlation, and (3) a reduction in boundary effects associated with discrete-space analyses (e.g., iCAR). 
 
-We approached this analysis using a spatially varying coefficient approach (SVC, Gelfand et al. 2003) which allowed for information on abundance and trends to be shared between geographic locations. Specifically, we used a continuous space triangulated model mesh and a stochastic partial differential equation (SPDE) approach (Lindgren et al. 2022). Duration in hours was included as a covariate to account for differences in sampling effort. A first-order autoregressive model was used to account for temporal autocorrelation in counts based on the day of year (doy_idx). A random effect was included to account for Routes level effects.
+The basic statistical unit for the analysis is the count of each species on a survey route during each month of the BCCWS (September to April). Parameters include a site-specific random intercept (alpha) and site-specific random slope (tau) coefficients both with spatial SPDE structure, which allows for information on relative abundance and year effects, respectively, to be shared across neighbours. Year is scaled such that the maximum year is 0. Differences in relative abundance among routes (κappa) is modeled with an independent and identically distributed (idd) random effect. We include smooth effect (ar1) for day-of-year (doy_idx) to account for the seasonal distribution of counts, and DurationInHours as an covariate to account for differences in survey effort. The basic model formula is as follows:
 
-The basic model formula is as follows:
+Observation Count ~ DurationInHours + f(kappa, model="iid", hyper=hyper.iid) + f(doy_idx, model = "ar1", hyper=prec.prior) + f(alpha, model =spde)+ f(tau, model =spde)
 
-Observation Count ~ DurationInHours + 
-      f(kappa, model="iid", hyper=hyper.iid) + f(doy_idx, model = "ar1", hyper=prec.prior) 
-    + f(alpha, model =spde)+ f(tau, model =spde)
-    
-Define your `site` as either "SalishSea", "BCCWS" or "PSSS".
-       
+Models are fit using a Bayesian framework with Integrated Nested Laplace Approximation (INLA) using the R-INLA package (Rue and Martino 2009) for R statistical computing (version 4.3.1; R Core Team 2021). Following model analysis and validation, posterior medians and 95% credible intervals (CI) are computed.
+
+Trends: Multiple metrics can be used to estimate a 'trend' from the estimated population trajectories. We provide both 'slope' and 'endpoint' trends calculated post-hoc from the population trajectories. Linear slope trends provide an estimate of the medium and longer-term patterns of population change, removing the effect of the random annual fluctuations. Endpoint trends follow methods outlined in the bbsBayes package (Edward and Smith 2021). Specifically, endpoint trend estimates are the geometric mean annual change (% per year) in the population trajectory, using an interval-specific ratio of the smoothed annual indices at the start and end of the time period (Sauer and Link 2011). 
+
+Trend estimates and 95% credible intervals were back-transformed to annual rates of population change using 100\*exp(estimate)-1. Trend were calculated using the full dataset, as well as for the most recent 10-years, and three generations (Bird et al. 2020), the latter of which are informative to status assessments in Canada (e.g., see COSEWIC's Quantitative criteria and guideline for the status assessment of wildlife species). If the three-generation length was less than 10 years, the output reflects the 10-year trend.
+
+All model outputs are displayed on the NaureCounts web portal and are accessible through the naturecounts R package. The outputs from this analysis will therefore provide resource managers with openly accessible annual indices of abundance for model-based management planning.
+
+
+### 2.1 Species Analysis
+You can manually create the species list or use the unique species in the data set.
+
+The code automatically creates output tables in the formate required for the State of Canada's Birds upload into NatureCounts. 
+
+You can select the minimum data requirements for the analysis. The ones selected here were done following the inspection of the full data set and likely work well for most species. However, finer scale assessment may need to assess their suitability. 
+
 ```{r}
 
-#Load your saved species data 
-sp.data<-read.csv("Data/sp.data.csv")
 #Create a list of species
-sp.list<-unique(sp.data$SpeciesCode) 
+sp.list<-unique(in.BCCWS$SpeciesCode) 
 
-
-#remove manually remove species for the list
-sp.list<-sp.list[sp.list!="NOFU"]
-#to restart the list if it crashes
+#to restart the list if it crashes 
 #sp.list<-sp.list[47:length(sp.list)]
 
 #Load your saved events data which is needed for zero-filling
-events<-read.csv("Data/events.csv")
+event.BCCWS<-read.csv("Data/event.BCCWS.csv")
 
 #Define your site. 
-site <- "SalishSea"
+site <- "BCCWS"
 
 #Create a data frame to store the results. 
 #This is the template used for the State of Canada's Birds and is required for upload into NatureCounts
 source("OutputTables.R")
-
-#Select the minimum data requirements for the analysis. The ones selected here were done follwoing the inspection of the International data set and likely work both the National anlysis. However, finer scale assessment may need to assess their suitability. 
 
 #Across routes with at least one detection, each species needs an overall abundance per year > 10, need to be detected in > one-half of the survey years, and on > 10 survey routes). Users may choose to adjust these parameters. 
 
@@ -73,4 +77,7 @@ routes <- 10
 source("Analysis.R")
 
 ```
+
+### 2.2 Guild Analysis
+
 

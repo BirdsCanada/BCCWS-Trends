@@ -1,39 +1,17 @@
 #Analysis scripts
 
-if(site=="BCCWS"){
-
-  sp.dat<-sp.data %>% filter(ProjectCode=="BCCWS")
-  event<-events %>% filter(ProjectCode=="BCCWS")
-  
-}  
-
-if(site=="PSSS"){
-  
-  sp.dat<-sp.data %>% filter(ProjectCode=="PSSS")
-  event<-events %>% filter(ProjectCode=="PSSS")
-  
-} 
-
-#Specify the spatial extent of the analysis
-if(site=="SalishSea"){
-  
-  sp.dat<-sp.data 
-  event<-events
-
-}
-  
   #Create a loop for the species list
   for(i in 1:length(sp.list)){
     
     #i<-1 #for testing
     
     #Subset the data for the species
-    dat <- sp.dat %>% filter(SpeciesCode==sp.list[i])
+    dat <- in.BCCWS %>% filter(SpeciesCode==sp.list[i])
     dat<-dat %>% distinct(ProjectCode, SurveyAreaIdentifier, wyear, YearCollected, MonthCollected, DayCollected, .keep_all = TRUE)
     sp.code<-sp.list[i]
     
 ##zero-fill the dat using the events dataframe##
-    dat<-left_join(event, dat, by= c("ProjectCode", "SurveyAreaIdentifier", "wyear", "YearCollected", "MonthCollected", "DayCollected"))
+    dat<-left_join(event.BCCWS, dat, by= c("ProjectCode", "SurveyAreaIdentifier", "wyear", "YearCollected", "MonthCollected", "DayCollected"))
 #Observation Counts will be backfilled with a 0 whenever it is NA
     dat$ObservationCount[is.na(dat$ObservationCount)]<-0
     dat$SpeciesCode<-sp.list[i]

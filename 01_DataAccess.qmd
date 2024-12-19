@@ -38,6 +38,8 @@ Auxiliary Data Collected:
 
 -   Survey condition: precipitation, % cloud, sea condition, tide state, tide movement, visibility, survey equipment, human activity (all categorical)
 
+**Duration in Hours** of each survey is an important variable to consider when analyzing trends. Longer surveys may detect more birds. There is substantial variation in survey duration for the BCCWS and the relationship for a lot of species looks non-linear. I.E., There are diminishing returns to survey duration. We therefore suggest that this is modeled as a covariate in the model and not an offset.
+
 ### 1.2 Data Access
 
 Data can be freely accessed through the NatureCounts data [download](https://naturecounts.ca/nc/default/searchquery.jsp) portal or directly through the naturecounts R package. The BCCWS is Access Level 4 dataset, meaning a data request form must be submitted. This is not meant to be a barrier, rather a means of keeping track of who is using the data and for what purposes.
@@ -47,11 +49,7 @@ Data are formatted using a standardized schema that is a core standard of the [A
 ```{r BCCWS Data Download}
 
 #sample code to access BCCWS data from NatureCounts
-BCCWS<-nc_data_dl(collection="BCCWS", username = "YOUR USERNAME", info="MY REASON", fields_set = "core", request_id = 12345)
-
-#this step should not be needed but it appears that there are more than 169 fields being included with the download. 
-BMDE_col<-unique(BMDE$local_name) 
-BCCWS<-BCCWS[BMDE_col]
+BCCWS<-nc_data_dl(collection="BCCWS", username = "YOUR USERNAME", info="MY REASON", fields_set = "core", request_id = 12345) #you will be prometed for your password
 
 #Write to Data folder in working directory
 write.csv(BCCWS, "Data/BCCWS.csv", row.names = FALSE)
@@ -60,137 +58,35 @@ BCCWS<-read.csv("Data/BCCWS.csv")
  
 ```
 
-## 2. Puget Sound Seabird Survey (PSSS)
-
-### 2.1 Protocol
-
-PSSS data collection protocol can be found online [here](https://seattleaudubon.org/wp-content/uploads/2021/01/PSSS_Protocol_2014-15.pdf).
-
-In short, surveys are conducted by volunteers using a standardized protocol and data collection [sheets](https://seattleaudubon.org/wp-content/uploads/2021/09/PSSS-Datasheet.pdf). Shore-based counts are completed monthly on the first Saturday of each month from October to April. Surveys are completed within approximately 2 hours of high tide to maximize the opportunity for close observation. Surveys are a minimum of 15 minutes and a maximum of 30 minutes per site. All waterbirds observed to a distance of 300 m from the high tide line are counted, except those that fly through without stopping. For large flocks, surveys estimate both the min, max, and best estimate. Surveyors are required to attend a short training session with Seattle Audubon staff prior to their first survey. Data are entered through a customized online data entry system, available [here](http://seabirdsurvey.org/seabirdsurvey/).
-
-The data are collected using a standardized protocol, by trained citizen-science volunteers. This standardization is a strength of this dataset for making inferences about coastal waterbirds in the US Salish Sea.
-
-### 2.2 Data Collected
-
-Total observation counts of each waterbird species seen during a point survey are recorded, including bearing, distance, and sex ratio. Raptors are recorded separately from the other waterbird species. The dataset is not zero-filled.
-
-Auxiliary Data Collected:
-
--   Observer information: observer name
-
--   Survey information: time observation started, time observation ended
-
--   Survey condition: weather, precipitation, sea state, tide movement, visibility, human activity, raptor activity (all categorical)
-
-### 2.3 Data Access
-
-At the time of writing, the data were only accessible by reaching out to the Seattle Audubon directly and filling out a data share agreement. The data will be sent to you as a .xslx flat file which will be suitable for Data formatting and processing. Ensure that you receive all the data for the specified temporal period you are interested in analyzing. This will be needed to allow for proper zero-filling. Place the data in a `Data` folder in your working directory.
-
-```{r working directory}
-getwd()
-```
-
-Now you can import the data using the file name.
-
-```{r PSSS, warning=FALSE}
-
-#sample code to access PSSS data from your working Data directory
-PSSS <- read_excel("Data/PSSS_022024.xlsx") #copy contains wyear 2022
-
-```
-
-### 2.4 Data Format
-
-The PSSS is in a different format than the BCCCW, and therefore requires a separate data processing step to wrangle the data into the 169 core fields of the Bird Monitoring Data Exchange ([BMDE](https://naturecounts.ca/nc/default/nc_bmde.jsp)). The following function will do this step for you.
-
-```{r PSSS-BMDE, warning=FALSE}
-
-source("PSSSBMDE.R") #warning about "missing pieces" can be ignored
-
-#Write to Data folder in working directory
-write.csv(PSSS, "Data/PSSS.csv", row.names = FALSE)
-
-#read from Data folder in working directory
-PSSS<-read.csv("Data/PSSS.csv")
- 
-```
-
-## 3. Clean and Combine
-
-Now it is time to do some data cleaning before we combine the BCCWS and PSSS datasets. The user has the opportunity here to select the start and end dates of the analysis by changing the Y1 and Y2 variables.
+### 1.3 Data Clear
 
 ```{r}
 
 #Manually Specify the start and end year of the analysis
 #Keep in mind that this is the winter year (wyear) which is the start year of the survey, #The survey straddles two calendar years
-Y1 = 2008
-Y2 = 2022
+Y1 = 1999 #start year of survey
+Y2 = 2023
 
 #Run the BCCWS cleaning scripts. 
 #Your output will include the data you need for an analysis of trends. 
-source("BCCWSClean.R")
+source("02_BCCWSClean.R")
 
-#Run the PSSS cleaning scripts.
-#Your output will include the data you need for an analysis of trends.
-source("PSSSClean.R")
-
-#Combine and write the data to you Data folder
-in.data<-rbind(in.BCCWS, in.PSSS)
-events<-rbind(event.BCCWS, event.PSSS)
-
-# To write to local Data directory
-write.csv(in.data, "Data/in.data.csv", row.names = FALSE)
-write.csv(events, "Data/events.csv", row.names = FALSE)
+# To write to local Data directory for analysis
+write.csv(in.BCCWS, "Data/in.BCCWS.csv", row.names = FALSE)
+write.csv(event.BCCWS, "Data/event.BCCWS.csv", row.names = FALSE)
 
 ```
 
-## 4. Species Selection
-
-Not all species will be included in an analysis. Some species are detected to infrequently to be included or they may not be species of focus for your study area. For example, you may wish to manually create a species list or you can set minimum data requirements for species to be included in the analysis.
-
-To manually create your list, you can use the 4 letter species codes. For example, to include the species: Surf Scoter (SUSC), Long-tailed Duck (LTDU), and Buffelhead (BUFF), you would create a list as follows:
-
-```{r}
-
-sp.list <-c("SUSC", "LTDU", "BUFF")
-
-#Now filter the full dataset by the species list
-in.data<-in.data[in.data$SpeciesCode %in% sp.list,]
-
-#write to Data folder in working directory
-write.csv(sp.data, "Data/sp.data.csv", row.names = FALSE)
-
-```
-
-Here we select species that are detected by both surveys. In the analysis script we will set some minumum data requirements to remove species that do not have enough data to estimate trends.
-
-```{r}
-
-#Determine which SpeciesCode each ProjectCode share in the full dataset
-sp.bsss<-in.data %>% filter(ProjectCode == "BCCWS") %>% dplyr::select(SpeciesCode) %>% distinct()
-sp.psss<-in.data %>% filter(ProjectCode == "PSSS") %>% dplyr::select(SpeciesCode) %>% distinct()
-
-common.species<-intersect(sp.bsss$SpeciesCode, sp.psss$SpeciesCode) 
-#There are 70 species in common between BCCWS and PSSS
-
-#filter the full dataset to only include the common species
-sp.data<-in.data[in.data$SpeciesCode %in% common.species,]
-
-#write to Data folder in working directory
-write.csv(sp.data, "Data/sp.data.csv", row.names = FALSE)
-
-```
-
-## 5. Sampling Events Plot
+## 2. Sampling Events Plot
 
 Now we will plot the distribution of sampling events over the extent of the Salish Sea. This will be facets by year (wyear) so that changes in sampling effort can be spatailly visualized. Each survey program will be given a different colout.
 
 ```{r}
 
 #Convert the data to a spatial object
-events_sf <- st_as_sf(events, coords = c("DecimalLongitude", "DecimalLatitude"), crs = 4326)
+events_sf <- st_as_sf(event.BCCWS, coords = c("DecimalLongitude", "DecimalLatitude"), crs = 4326)
 
-ggplot(data = events_sf) +
+p<-ggplot(data = events_sf) +
   # Select a basemap
   annotation_map_tile(type = "cartolight", zoom = NULL, progress = "none") +
   # Plot the points, color-coded by survey_year
@@ -211,55 +107,8 @@ ggplot(data = events_sf) +
   #Define the legend title
   scale_color_discrete(name = "Winter Year")
 
-```
-
-## 6. Effort Plot (Duration in Hours)
-
-The duration of each survey is an important variable to consider when analyzing trends. Longer surveys may detect more birds. There is a substaintial difference in survey duration between BCCWS and PSSS. We therefore want to model this relationship. We look here to see if the relationship look linear or if there is a better model to fit the data.
-
-```{r}
-
-all.data<-sp.data %>% left_join(events, by = c("ProjectCode", "SurveyAreaIdentifier", "wyear", "YearCollected", "MonthCollected", "DayCollected"))
-
-ggplot(data = all.data) +
-  geom_point(aes(x = DurationInHours, y = ObservationCount), alpha = 0.5) +
-  #add loess smooth
-  geom_smooth(aes(x = DurationInHours, y = ObservationCount), method = "loess", se = FALSE, color = "red") +
-  facet_wrap(~ SpeciesCode, scales = "free_y") +
-  labs(title = "Duration of Survey vs. Observation Count",
-       x = "Duration (hours)",
-       y = "Observation") +
-  theme_minimal()
-
-#the relationship for a lot of species looks non-linear. There are diminishing returns to survey duration. We therefore suggest that this is modeled as a covarite in the model and not an offset. 
+ggsave("output/Plots/BCCWSEventsMap.jpeg", plot = p, width = 10, height = 10, units = "in", dpi = 300)
 
 ```
 
-## 7. Spatial Data
-
-When deriving population trends, we are often interesting in doing this for specific geographic areas of interest. These could be management units or areas of conservation concern. Here we will create a spatial object that represents the Salish Sea and its subregions: Country.
-
-Spatial units are also used in the iCAR model to account for spatial autocorrelation in the data and to estimate the spatial structure of the population trends.
-
-```{r}
-
-#Get the British Columbia, Canada and Washington, US shapefiles from the naturalearth package. 
-
-canada <- ne_states(country = "canada", returnclass = "sf") 
-BC<- canada[canada$name=="British Columbia",]
-
-us<- ne_states(country = "united states of america", returnclass = "sf") 
-WA<- us[us$name=="Washington",]
-
-#Combine the two shapefiles
-salish_sea <- rbind(BC, WA)
-
-events_sf <- st_transform(events_sf, st_crs(salish_sea))
-
-# Get the index of the nearest country for each event
-nearest_indices <- st_nearest_feature(events_sf, salish_sea)
-
-# Assign the country names based on the nearest indices
-events_sf$Province <- salish_sea$name[nearest_indices]
-
-```
+Once your data cleaning is complete you are ready to move onto 02_DataAnalysis.

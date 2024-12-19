@@ -26,7 +26,7 @@ in.BCCWS <- read.csv("Data/BCCWS.csv") # reads in back-up copy of database
   in.BCCWS <- subset(in.BCCWS, !is.na(SpeciesCode))
   
   # filter data by months October to April
-  in.BCCWS <- subset(in.BCCWS, MonthCollected %in% c(10:12, 1:4))
+  in.BCCWS <- subset(in.BCCWS, MonthCollected %in% c(9:12, 1:4))
   # filter bad dates
   in.BCCWS <- in.BCCWS %>% filter(!(SurveyAreaIdentifier == "LMSQ-3" & SpeciesCode == "BAEA" & YearCollected == "1999" & MonthCollected == "12" & DayCollected == "12"))
   # parse out form ID number and delete bad forms
