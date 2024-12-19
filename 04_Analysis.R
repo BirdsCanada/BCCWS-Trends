@@ -106,7 +106,7 @@ if(min.data==TRUE){
     dispersion.csv$SpeciesCode<-sp.list[i]
     dispersion.csv$dispersion<-Dispersion1
     
-    write.table(dispersion.csv, file = paste(out.dir,  site, "DispersionStat.csv", sep = ""),
+    write.table(dispersion.csv, file = paste(out.dir,  site, "_DispersionStat.csv", sep = ""),
                 col.names = FALSE, row.names = FALSE, append = TRUE, quote = FALSE, sep = ",")
     
     dat$mu1<-mu1

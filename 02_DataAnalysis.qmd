@@ -8,7 +8,7 @@ editor_options:
 
 # Data Analysis 
 
-Run setup if starting a new environment.
+Run setup if starting from a clean environment.
 
 ```{r}
 
@@ -65,19 +65,21 @@ site <- "BCCWS"
 
 #Create a data frame to store the results. 
 #This is the template used for the State of Canada's Birds and is required for upload into NatureCounts
-source("OutputTables.R")
+source("03_OutputTables.R")
 
 #Across routes with at least one detection, each species needs an overall abundance per year > 10, need to be detected in > one-half of the survey years, and on > 10 survey routes). Users may choose to adjust these parameters. 
 
 min.abundance <- 50
 min.years <- (Y2-Y1)/2
-routes <- 10
+nroutes <- 10
 
 #Now we can initiate the analysis.  
-source("Analysis.R")
+source("04_Analysis.R")
 
 ```
 
 ### 2.2 Guild Analysis
+
+To be complete at a later date. 
 
 
