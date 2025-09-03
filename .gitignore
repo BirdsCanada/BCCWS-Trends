@@ -52,3 +52,7 @@ rsconnect/
 # Ignore backup folder
 /Data/
 /Output/
+
+!Data/GuildList.csv
+!Data/Species_Analysis_List.csv
+!Data/Spatial/*
