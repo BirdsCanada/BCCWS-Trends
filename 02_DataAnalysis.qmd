@@ -6,80 +6,234 @@ editor_options:
   chunk_output_type: console
 ---
 
-# Data Analysis 
+# 2 Data Analysis
 
 Run setup if starting from a clean environment.
 
 ```{r}
 
-source("01_Setup.R")
+source("Scripts/00_Setup.R")
 
-#Read in the clean datasets
-in.BCCWS<-read.csv("Data/in.BCCWS.csv")
-event.BCCWS<-read.csv("Data/event.BCCWS.csv")
+#Manually specify the area of the analysis. In this case it will be BCCWS
+area <- "BCCWS"
+#Specify the model
+model<-"iCAR"
 
 #Manually Specify the start and end year of the analysis
 Y1 = 1999
-Y2 = 2023
+Y2 = 2024
+
+#Read in the clean datasets
+sp.data<-read.csv("Data/sp.data.csv", row.names = 1)
+sp.data <- sp.data %>% filter(wyear >= Y1 & wyear <= Y2, row.names=1)
+
+events<-read.csv("Data/BCCWS.events.csv")
+events <- events %>% filter(wyear >= Y1 & wyear <= Y2)
+
+#Load the Salish Sea Water Polygon for graphing results 
+map<- st_read("Data/Spatial/UpdatesAreaPlanLayers.shp")
+
+#ensure the coordinate reference systems are the same
+mapCRS<-st_crs(map) #get the CRS of the poly data
+
+#ensure the coordinate reference systems are the same
+mapCRS<-st_crs(map) #get the CRS of the poly data
+
+#Create a spatial points layers for graphing results
+loc<-events %>% select(SurveyAreaIdentifier, DecimalLatitude, DecimalLongitude) %>% distinct()
+xy<-st_as_sf(loc, coords = c("DecimalLongitude", "DecimalLatitude"))
+st_crs(xy)<-"+proj=longlat +datum=NAD83"
+xy<-st_transform(xy, mapCRS) #transform 
+
+```
+
+## 2.1 Set Analysis Parameters 
+
+A polygon should have counts in all years to ensure that sampling is complete and consistent. Those that have incomplete time series are removed.
+
+
+```{r}
+#  assignment_method <- "within"  
+ assignment_method <- "nearest"
+  
+# Load and prepare polygon
+  poly <- st_read("Data/Spatial/UpdatesAreaPlanLayers.shp") %>% 
+    st_make_valid() %>% 
+    st_transform(st_crs(mapCRS))  # Ensure CRS matches points
+  
+  # Define the names of the polygons you want to combine
+  areas_to_combine <- c("North Vancouver Island", "North Coast", "Central Coast", 
+                      "Haida Gwaii", "West Coast Vancouver Island")
+ #List available fields for user selection
+  print(names(poly))
+  
+# Create a new grouping variable and then combine the polygons
+  poly <- poly %>%
+  mutate(group_name = ifelse(Area %in% areas_to_combine, 
+                             "Combined Outer Coast", 
+                             Area)) %>%
+  group_by(group_name) %>%
+  summarise(geometry = st_union(geometry))
+
+  # You can now view the new, combined sf object
+  print(poly)
+
+#Prompt user to select polygon ID and area fields
+  polygon_id_field <- "group_name" #Enter the field name for polygon ID (e.g., 'WatershedID')
+  area_field <- "" #Enter the field name for area (or leave blank if none or you desire equal weights)
+
+#Rename fields to 'Name' and 'Area'. If polygon area is missing, this will be created and assigned to 1. Analytically, this means the "Study Area" trend will be equally weighted across all polygons. 
+  poly <- poly %>%
+  rename(Name = !!polygon_id_field) %>%
+  mutate(Area = if (area_field != "") .data[[area_field]] else 1)
+  
+#Assignment method   
+ if (assignment_method == "within") {
+  # Assign points to polygons only if strictly within
+  xy_assigned <- st_join(xy, poly, join = st_within)
+} else if (assignment_method == "nearest") {
+  # Assign each point to the nearest polygon
+  nearest_poly_index <- st_nearest_feature(xy, poly)
+  xy_assigned <- xy
+  xy_assigned$Name <- poly$Name[nearest_poly_index]
+  xy_assigned$Area <- poly$Area[nearest_poly_index]
+} else {
+  stop("Unknown assignment method.")
+}
+
+# Drop polygons with no assigned points
+used_names <- unique(na.omit(xy_assigned$Name))
+poly <- poly %>% filter(Name %in% used_names)
+
+
+ # Create grid table
+grid <- xy_assigned %>%
+  st_drop_geometry() %>%
+  filter(Name %in% poly$Name) %>%
+  select(SurveyAreaIdentifier, Name, Area) %>%
+  distinct() %>%
+  mutate(alpha_i = as.integer(factor(Name)))%>% 
+  drop_na(Name) #Drop unassigned point
+
+# Merge grid info back to events
+events <- events %>%
+  left_join(grid, by = "SurveyAreaIdentifier") %>%
+  drop_na(Name)
+
+# Visualization
+  spatial_plot <- ggplot() +
+    geom_sf(data = poly, aes(fill = Name), color = "black") +
+    geom_sf(data = xy, color = "darkgrey", size = 2) +
+    theme_minimal()
+  
+  print(spatial_plot)
+  ggsave(file.path(plot.dir, "iCAR_Spatial_Plot.jpeg"), 
+         plot = spatial_plot, width = 8, height = 6, dpi = 300)
 
 ```
 
 
-## 2 Methods
+### 2.1.2 Species or Guild Specific Analysis
 
-Our analysis will use spatially varying coefficient models (SVCs, Gelfand et al. 2003) to account for relationships between variables that are not uniform across large spatial areas. This modelling approach was first applied to continent wide bird abundance data to assess winter bird population trends using discrete aerial units (Meehan et al. 2019) and an intrinsic conditional autoregressive model (iCAR; Besag 1974). The modelling framework was later adapted (Meehan et al. 2024) to incorporate continuous space using a triangulated model mesh and stochastic partial differential equation (SPDE; Lindgren et al. 2022). The SPDE models benefits include (1) finer resolution of trends, (2) a better understanding of the range of spatial correlation, and (3) a reduction in boundary effects associated with discrete-space analyses (e.g., iCAR). 
-
-The basic statistical unit for the analysis is the count of each species on a survey route during each month of the BCCWS (September to April). Parameters include a site-specific random intercept (alpha) and site-specific random slope (tau) coefficients both with spatial SPDE structure, which allows for information on relative abundance and year effects, respectively, to be shared across neighbours. Year is scaled such that the maximum year is 0. Differences in relative abundance among routes (κappa) is modeled with an independent and identically distributed (idd) random effect. We include smooth effect (ar1) for day-of-year (doy_idx) to account for the seasonal distribution of counts, and DurationInHours as an covariate to account for differences in survey effort. The basic model formula is as follows:
-
-Observation Count ~ DurationInHours + f(kappa, model="iid", hyper=hyper.iid) + f(doy_idx, model = "ar1", hyper=prec.prior) + f(alpha, model =spde)+ f(tau, model =spde)
-
-Models are fit using a Bayesian framework with Integrated Nested Laplace Approximation (INLA) using the R-INLA package (Rue and Martino 2009) for R statistical computing (version 4.3.1; R Core Team 2021). Following model analysis and validation, posterior medians and 95% credible intervals (CI) are computed.
-
-Trends: Multiple metrics can be used to estimate a 'trend' from the estimated population trajectories. We provide both 'slope' and 'endpoint' trends calculated post-hoc from the population trajectories. Linear slope trends provide an estimate of the medium and longer-term patterns of population change, removing the effect of the random annual fluctuations. Endpoint trends follow methods outlined in the bbsBayes package (Edward and Smith 2021). Specifically, endpoint trend estimates are the geometric mean annual change (% per year) in the population trajectory, using an interval-specific ratio of the smoothed annual indices at the start and end of the time period (Sauer and Link 2011). 
-
-Trend estimates and 95% credible intervals were back-transformed to annual rates of population change using 100\*exp(estimate)-1. Trend were calculated using the full dataset, as well as for the most recent 10-years, and three generations (Bird et al. 2020), the latter of which are informative to status assessments in Canada (e.g., see COSEWIC's Quantitative criteria and guideline for the status assessment of wildlife species). If the three-generation length was less than 10 years, the output reflects the 10-year trend.
-
-All model outputs are displayed on the NaureCounts web portal and are accessible through the naturecounts R package. The outputs from this analysis will therefore provide resource managers with openly accessible annual indices of abundance for model-based management planning.
-
-
-### 2.1 Species Analysis
-You can manually create the species list or use the unique species in the data set.
-
-The code automatically creates output tables in the formate required for the State of Canada's Birds upload into NatureCounts. 
-
-You can select the minimum data requirements for the analysis. The ones selected here were done following the inspection of the full data set and likely work well for most species. However, finer scale assessment may need to assess their suitability. 
+For a species-specific analysis, select the species you wish to analyse.
 
 ```{r}
 
-#Create a list of species
-sp.list<-unique(in.BCCWS$SpeciesCode) 
+#To view your options of species
+species<-unique(sp.data$CommonName)
+#view(species)
 
-#to restart the list if it crashes 
-#sp.list<-sp.list[47:length(sp.list)]
+#Create a list of species using all available species in the dataset.
+species.list<-tolower("All") #R is case sensitive
 
-#Load your saved events data which is needed for zero-filling
-event.BCCWS<-read.csv("Data/event.BCCWS.csv")
+#Or you can manually select species. Ensure case and spelling is correct. 
+#species.list <- c("American Wigeon", "Common Loon", "Large Gull") 
 
-#Define your site. 
-site <- "BCCWS"
-
-#Create a data frame to store the results. 
-#This is the template used for the State of Canada's Birds and is required for upload into NatureCounts
-source("03_OutputTables.R")
-
-#Across routes with at least one detection, each species needs an overall abundance per year > 10, need to be detected in > one-half of the survey years, and on > 10 survey routes). Users may choose to adjust these parameters. 
-
-min.abundance <- 50
-min.years <- (Y2-Y1)/2
-nroutes <- 10
-
-#Now we can initiate the analysis.  
-source("04_Analysis.R")
 
 ```
 
-### 2.2 Guild Analysis
+For a guild-specific analysis, change `guild` to "Yes" and specify the `type` as either "migration", "diet", or "family". This will override the species list above.
 
-To be complete at a later date. 
+*You do not need to run this code chunk if doing a species-specific analysis. Default guild is set to "No" in the setup script.*
 
+```{r}
 
+guild <- "yes"
+
+#To view your options of guilds
+migration<-unique(sp.data$Migration)
+#view(migration)
+
+diet<-unique(sp.data$Diet)
+#view(diet)
+
+family<-unique(sp.data$family_name)
+#view(family)
+
+#select on of the options for the analysis
+type <-"migration"
+
+```
+
+### 2.1.3 Minimum Data Requirement
+
+Select the minimum data requirements for the analysis. The ones selected here were done following the inspection of the International dataset. However, finer scale assessment may need to assess their suitability.
+
+```{r}
+
+#The minimum data required across sites with at least one detection:
+
+min.abundance <- 10 #Overall abundance per year > 10
+min.years <- (Y2-Y1)/2 #Detected in > one-half of the survey years
+nsites <- 10 #Detected at > 10 survey sites
+
+```
+
+### 2.1.4 Model Specifications
+
+Select the distributional family, and set random and spatial priors, or retain the defaults. These priors were selected based on model assessments for the full study area.
+
+```{r}
+
+#Here we select 'nbinomal' but this may need to adjust if there is residual overdispersion. 
+
+fam<-'nbinomial'
+#fam<-'poisson'
+
+#Priors for the random effects
+hyper.iid <- list(prec = list(prior = "pc.prec", param = c(1, 0.01)))
+
+```
+
+## 2.2 Analysis 
+
+Create output tables to the `Output` folder using a custom file `name`.
+
+The files that this code creates is a file for Annual Indices for each sampling site, end-point Trends, and a file with the Dispersion statistic.
+
+You are ready to start your analysis! The analysis will write results to the files on the folder and also create some plots for model checking.
+
+```{r}
+
+#Give your analytically output file a unique name (e.g., BCCWS_Species, SalishSea_Migration, Watershed_Species), 
+
+name<-"BCCWS_Species"
+
+#This is the template used for the State of Canada's Birds and is required for upload into NatureCounts
+
+#Now we can initiate the analysis based on the `model` you previously specified.   
+run_analysis(model)
+
+```
+
+Note that the Dispersion Statistic file in the Output folder should be reviewed after the analysis. If the statistic is \> 10 you should inspect the FitPlots in the Plot directory. In this case we will want to rerun using a different distributional assumption on the counts. This can be done by manually changing the `fam` to Poission and selecting these species to be rerun.
+
+## Map Results 
+
+Finally, you can visualize your results.
+
+```{r}
+
+ graph_results(name)
+
+```
