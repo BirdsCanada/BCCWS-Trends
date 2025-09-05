@@ -49,7 +49,7 @@ Data are formatted using a standardized schema that is a core standard of the [A
 ```{r BCCWS Data Download}
 
 #sample code to access BCCWS data from NatureCounts
-BCCWS<-nc_data_dl(collection="BCCWS", username = "YOUR USERNAME", info="MY REASON", fields_set = "core", request_id = 12345) #you will be prometed for your password
+BCCWS<-nc_data_dl(collection="BCCWS", username = "rdjmacklin", fields_set = "core", request_id = 258865) #you will be prometed for your password
 
 #Write to Data folder in working directory
 write.csv(BCCWS, "Data/BCCWS.csv", row.names = FALSE)
@@ -103,7 +103,7 @@ write.csv(event.BCCWS, "Data/BCCWS.events.csv", row.names = FALSE)
 
 ```
 
-## 1.4 Species Filtering 
+## 1.4 Species Filtering
 
 Not all species will be included in an analysis. Some species are detected too infrequently to be included or they may not be species well monitored by the coastal waterbird survey protocol. In the next section, you will be given the option to manually [select focal species or guilds](#3.1.2Analysis) for the analysis.
 
@@ -122,7 +122,7 @@ write.csv(sp.data, "Data/sp.data.csv", row.names = FALSE)
 
 ```
 
-## 1.5 Guild Assignment 
+## 1.5 Guild Assignment
 
 The user may be interested in assigning species to Guilds for their analysis. In the `Data` folder we provide the user with the [GuildList.csv](Data/GuildList.csv) for assigning migration and dietary guilds. We can also assign species to family using the NatureCounts metadata, which can be accessed using the R package.
 
@@ -130,7 +130,7 @@ The user may wish to review and update this .csv as needed, as new species might
 
 ```{r}
 
-guilds<-read.csv("Data/GuildList.csv")
+guilds<-read_delim("Data/GuildList.csv", delim = ";")
 
 guilds<-guilds[guilds$english_name %in% sp.analysis,]
 
@@ -156,7 +156,7 @@ events_sf <- st_as_sf(event.BCCWS, coords = c("DecimalLongitude", "DecimalLatitu
 
 p<-ggplot(data = events_sf) +
   # Select a basemap
-  annotation_map_tile(type = "cartolight", zoom = NULL, progress = "none") +
+  annotation_map_tile(type = "cartolight", progress = "none") +
   # Plot the points, color-coded by survey_year
   geom_sf(aes(color = as.factor(wyear)), size = 1) +
   # Facet by survey_year to create the multi-paneled map

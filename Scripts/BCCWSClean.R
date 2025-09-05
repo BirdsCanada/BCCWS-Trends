@@ -13,7 +13,7 @@ in.BCCWS <- read.csv("Data/BCCWS.csv") # reads in back-up copy of database
   
 
   in.BCCWS<-merge(in.BCCWS, sp, by.x=c("CommonName"), by.y= ("english_name"), all.x=TRUE) 
-  in.BCCWS$ObservationCount<-as.numeric(in.BCCWS$ObservationCount)  
+  in.BCCWS$ObservationCount<- as.numeric(in.BCCWS$ObservationCount2) + as.numeric(in.BCCWS$ObservationCount3) + as.numeric(in.BCCWS$ObservationCount4)  
   
   #Thayer's Gull missing SpeciesCode. Need to assign here species_id == 5190
   in.BCCWS$SpeciesCode<-as.character(in.BCCWS$SpeciesCode)
@@ -31,6 +31,18 @@ in.BCCWS <- read.csv("Data/BCCWS.csv") # reads in back-up copy of database
   in.BCCWS$form.id <- gsub("BCCWS-", "", in.BCCWS$SamplingEventIdentifier)
   in.BCCWS <- subset(in.BCCWS, form.id != 3794 & form.id != 5469 &
                        form.id != 5063 & form.id != 6945)
+  
+  
+  #Remove route being done for joint venture research (primarily in marshes)
+  remove <- c("LM-GR-ctrl-WS01", "LM-GR-ctrl-WS02", "LM-SA-WS01", "LM-SA-WS02", 
+              "LM-SA-ctrl-WS01", "LM-BU-ctrl-WS01", "LM-BU-WS01", "LM-MS-WS01", 
+              "LM-MS-WS02", "LM-MS-ctrl-WS01", "LM-MS-ctrl-WS02", "LM-WV-ctrl-WS01", 
+              "LM-WV-WS01", "LM-WC-WS01", "LM-WC-ctrl-WS01", "LM-GE-WS01", 
+              "LM-SW-WS01", "LM-SW-GE-ctrl-WS01", "LM-NC-WS01", "LM-NC-WS02", 
+              "LM-NC-ctrl-WS01", "LM-BE-ctrl-WS01", "LM-BE-WS01", "LM-BE-WS02")
+  
+  in.BCCWS <- in.BCCWS %>% 
+    filter(!SurveyAreaIdentifier %in% remove)
     
   # seems to be a few duplicate records in data file; this keeps only one
   in.BCCWS <- distinct(in.BCCWS)
