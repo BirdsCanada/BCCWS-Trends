@@ -156,7 +156,7 @@ For a guild-specific analysis, change `guild` to "Yes" and specify the `type` as
 
 ```{r}
 
-guild <- "no"
+guild <- "yes"
 
 #To view your options of guilds
 migration<-unique(sp.data$Migration)
@@ -215,7 +215,7 @@ You are ready to start your analysis! The analysis will write results to the fil
 
 #Give your analytically output file a unique name (e.g., BCCWS_Species, SalishSea_Migration, Watershed_Species), 
 
-name<-"BCCWS_Species"
+name<-"BCCWS_Migration"
 
 #This is the template used for the State of Canada's Birds and is required for upload into NatureCounts
 
