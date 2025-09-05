@@ -24,8 +24,8 @@ Y1 = 1999
 Y2 = 2024
 
 #Read in the clean datasets
-sp.data<-read.csv("Data/sp.data.csv", row.names = 1)
-sp.data <- sp.data %>% filter(wyear >= Y1 & wyear <= Y2, row.names=1)
+sp.data<-read.csv("Data/sp.data.csv")
+sp.data <- sp.data %>% filter(wyear >= Y1 & wyear <= Y2)
 
 events<-read.csv("Data/BCCWS.events.csv")
 events <- events %>% filter(wyear >= Y1 & wyear <= Y2)
@@ -47,10 +47,9 @@ xy<-st_transform(xy, mapCRS) #transform
 
 ```
 
-## 2.1 Set Analysis Parameters 
+## 2.1 Set Analysis Parameters
 
 A polygon should have counts in all years to ensure that sampling is complete and consistent. Those that have incomplete time series are removed.
-
 
 ```{r}
 #  assignment_method <- "within"  
@@ -132,7 +131,6 @@ events <- events %>%
 
 ```
 
-
 ### 2.1.2 Species or Guild Specific Analysis
 
 For a species-specific analysis, select the species you wish to analyse.
@@ -158,7 +156,7 @@ For a guild-specific analysis, change `guild` to "Yes" and specify the `type` as
 
 ```{r}
 
-guild <- "yes"
+guild <- "no"
 
 #To view your options of guilds
 migration<-unique(sp.data$Migration)
@@ -205,7 +203,7 @@ hyper.iid <- list(prec = list(prior = "pc.prec", param = c(1, 0.01)))
 
 ```
 
-## 2.2 Analysis 
+## 2.2 Analysis
 
 Create output tables to the `Output` folder using a custom file `name`.
 
@@ -228,7 +226,7 @@ run_analysis(model)
 
 Note that the Dispersion Statistic file in the Output folder should be reviewed after the analysis. If the statistic is \> 10 you should inspect the FitPlots in the Plot directory. In this case we will want to rerun using a different distributional assumption on the counts. This can be done by manually changing the `fam` to Poission and selecting these species to be rerun.
 
-## Map Results 
+## Map Results
 
 Finally, you can visualize your results.
 
