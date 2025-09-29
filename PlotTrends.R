@@ -7,13 +7,13 @@ sp.tax<-sp.tax %>% dplyr::select(species_id, sort_order, english_name)
 #read indices and trends for a specific site
 
 indices<-NULL
-indices<-read.csv(paste(out.dir, name, "_AnnualIndices_iCAR.csv", sep=""))
+indices<-read.csv(paste(out.dir, name, "_AnnualIndices.csv", sep=""))
 
 all.trend <- NULL
 if (trend == "endpoint") {
-  all.trends <- read.csv(file.path(out.dir, paste0(name, "_TrendsEndPoint_iCAR.csv"))) 
+  all.trends <- read.csv(file.path(out.dir, paste0(name, "_TrendsEndPoint.csv"))) 
     } else if (trend == "slope") {
-  all.trends <- read.csv(file.path(out.dir, paste0(name, "_TrendsSlope_iCAR.csv"))) 
+  all.trends <- read.csv(file.path(out.dir, paste0(name, "_TrendsSlope.csv"))) 
     }
 
 ##Prepare trends for plotting

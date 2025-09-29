@@ -51,7 +51,7 @@ rsconnect/
 #Anything in the Data, Output, or Plot folders
 # Ignore backup folder
 /Data/
-/Output/
+/Output/Plots
 
 !Data/GuildList.csv
 !Data/Species_Analysis_List.csv

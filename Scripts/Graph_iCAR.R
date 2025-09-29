@@ -27,6 +27,9 @@ all.trends <- all.trends %>%
 if(!inherits(poly, "sf")) stop("poly must be an sf object")
 if(!inherits(map, "sf")) stop("map must be an sf object")
 
+poly <- st_make_valid(poly)
+map <- st_make_valid(map)
+
 species_list3 <- unique(all.trends$species_code)
 
 for(current_sp in species_list3) {
@@ -88,5 +91,6 @@ ggsave(
   dpi = 300
 )
 }
+
 
 

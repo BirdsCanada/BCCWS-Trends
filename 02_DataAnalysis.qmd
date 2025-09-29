@@ -215,7 +215,7 @@ You are ready to start your analysis! The analysis will write results to the fil
 
 #Give your analytically output file a unique name (e.g., BCCWS_Species, SalishSea_Migration, Watershed_Species), 
 
-name<-"BCCWS_Migration"
+name<-"BCCWS"
 
 #This is the template used for the State of Canada's Birds and is required for upload into NatureCounts
 

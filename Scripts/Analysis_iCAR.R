@@ -9,7 +9,7 @@ if(species.list == "all"){
   sp.dat<-sp.data 
   event<-events
   
-##remove COVID data 
+# ##remove COVID data 
 sp.dat<-sp.dat %>% filter(wyear != 2020)
 event<-event %>% filter(wyear != 2020)
 
