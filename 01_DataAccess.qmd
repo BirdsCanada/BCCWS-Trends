@@ -49,7 +49,7 @@ Data are formatted using a standardized schema that is a core standard of the [A
 ```{r BCCWS Data Download}
 
 #sample code to access BCCWS data from NatureCounts
-BCCWS<-nc_data_dl(collection="BCCWS", username = "rdjmacklin", fields_set = "core", request_id = 258865) #you will be prometed for your password
+BCCWS<-nc_data_dl(collection="BCCWS", username = "YOURUSERNAME", fields_set = "core", request_id = 12345) #you will be prometed for your password
 
 #Write to Data folder in working directory
 write.csv(BCCWS, "Data/BCCWS.csv", row.names = FALSE)

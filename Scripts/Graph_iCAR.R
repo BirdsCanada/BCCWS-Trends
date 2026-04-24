@@ -3,11 +3,11 @@
 trend<-"slope"
 
 if (trend == "endpoint") {
-  all.trends <- read.csv(file.path(out.dir, paste0(name, "_TrendsEndPoint_iCAR.csv"))) %>% 
+  all.trends <- read.csv(file.path(out.dir, paste0(name, "_TrendsEndPoint.csv", sep=""))) %>% 
     drop_na(results_code) %>% 
     select(area_code, species_code, trnd, lower_ci, upper_ci)
 } else if (trend == "slope") {
-  all.trends <- read.csv(file.path(out.dir, paste0(name, "_TrendsSlope_iCAR.csv"))) %>% 
+  all.trends <- read.csv(file.path(out.dir, paste0(name, "_TrendsSlope.csv", sep=""))) %>% 
     drop_na(results_code) %>% 
     select(area_code, species_code, trnd, lower_ci, upper_ci)
 }

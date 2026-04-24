@@ -12,13 +12,10 @@ library(dplyr)
 
 #Load trends tables
 
-species<-read.csv("Output/Watershed_Species_TrendsSlope_iCAR.csv")
-diet<-read.csv("Output/Watershed_Diet_TrendsSlope_iCAR.csv")
-migration<-read.csv("Output/Watershed_Migration_TrendsSlope_iCAR.csv")
-family<-read.csv("Output/Watershed_Family_TrendsSlope_iCAR.csv")
+species<-read.csv("Output/BCCWS_TrendsSlope.csv")
 
-table <- bind_rows(species, diet, migration, family)
-table <- table %>% select(species_id, species_code, area_code, trnd, lower_ci, upper_ci) %>% drop_na(area_code)
+#table <- bind_rows(species, diet, migration, family)
+table <- table %>% dplyr::select(species_id, species_code, area_code, trnd, lower_ci, upper_ci) %>% drop_na(area_code)
 
 sp<-meta_species_taxonomy()
 sp<-sp %>% select(species_id, english_name, scientific_name)

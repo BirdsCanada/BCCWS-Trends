@@ -36,9 +36,6 @@ map<- st_read("Data/Spatial/UpdatesAreaPlanLayers.shp")
 #ensure the coordinate reference systems are the same
 mapCRS<-st_crs(map) #get the CRS of the poly data
 
-#ensure the coordinate reference systems are the same
-mapCRS<-st_crs(map) #get the CRS of the poly data
-
 #Create a spatial points layers for graphing results
 loc<-events %>% select(SurveyAreaIdentifier, DecimalLatitude, DecimalLongitude) %>% distinct()
 xy<-st_as_sf(loc, coords = c("DecimalLongitude", "DecimalLatitude"))
@@ -218,6 +215,7 @@ You are ready to start your analysis! The analysis will write results to the fil
 name<-"BCCWS"
 
 #This is the template used for the State of Canada's Birds and is required for upload into NatureCounts
+source("Scripts/OutputTables.R")
 
 #Now we can initiate the analysis based on the `model` you previously specified.   
 run_analysis(model)

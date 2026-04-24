@@ -173,16 +173,16 @@ for(i in 1:length(sp.list)){
         arrange(SurveyAreaIdentifier, wyear)
       
       # # Aggregate data to annual max count
-      # dat <- dat %>%
-      #   group_by(SurveyAreaIdentifier, wyear) %>%
-      #   slice_max(ObservationCount, n = 1, with_ties = FALSE) %>%
-      #   ungroup()
-      
-      #Get the median observation count
       dat <- dat %>%
         group_by(SurveyAreaIdentifier, wyear) %>%
-        mutate(ObservationCount = round(median(ObservationCount, na.rm = TRUE))) %>%
+        slice_max(ObservationCount, n = 1, with_ties = FALSE) %>%
         ungroup()
+
+      # #Get the median observation count
+      # dat <- dat %>%
+      #   group_by(SurveyAreaIdentifier, wyear) %>%
+      #   mutate(ObservationCount = round(median(ObservationCount, na.rm = TRUE))) %>%
+      #   ungroup()
 
       
       #hyper.iid.simple <- list(prec = list(initial = 0, fixed = TRUE))
@@ -317,6 +317,12 @@ for(i in 1:length(sp.list)){
         group_by(alpha_i) %>%
         summarise(sample_size = n_distinct(SurveyAreaIdentifier), .groups = "drop")
       
+      sum_row <- data.frame(
+        alpha_i = "BC",
+        sample_size = sum(sample_size$sample_size, na.rm = TRUE)
+      )
+      sample_size <- rbind(sample_size, sum_row)
+      
       #Calculate Posterior estimate of abundance
       nsamples<- 1000
       post.sample1 <-NULL #clear previous
@@ -428,7 +434,7 @@ for(i in 1:length(sp.list)){
         smooth_lower_ci="",
         upload_dt="",
         family=fam,
-        results_code = "BCCWS_PSSS",
+        results_code = "BCCWS",
         version = as.integer(format(Sys.Date(), "%Y")),
         season="Winter"
           )
@@ -592,7 +598,7 @@ for(i in 1:length(sp.list)){
                year_end = Y2,
                period ="all years",
                season = "winter",
-               results_code = "BCCWS_PSSS",
+               results_code = "BCCWS",
                version = as.integer(format(Sys.Date(), "%Y")), 
                species_code = sp.code,
                species_id=sp.id, 
